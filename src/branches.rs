@@ -63,43 +63,43 @@ mod tests {
 
     #[test]
     fn staging_18_03() {
-	let res = next_branches("staging-18.03");
-	assert_eq!(res, vec!["release-18.03"]);
+        let res = next_branches("staging-18.03");
+        assert_eq!(res, vec!["release-18.03"]);
     }
 
     #[test]
     fn staging_20_09() {
-	let res = next_branches("staging-20.09");
-	assert_eq!(res, vec!["release-20.09"]);
+        let res = next_branches("staging-20.09");
+        assert_eq!(res, vec!["release-20.09"]);
     }
 
     #[test]
     fn staging_21_05() {
-	let res = next_branches("staging-21.05");
-	assert_eq!(res, vec!["staging-next-21.05"]);
+        let res = next_branches("staging-21.05");
+        assert_eq!(res, vec!["staging-next-21.05"]);
     }
 
     #[test]
     fn staging_30_05() {
-	let res = next_branches("staging-30.05");
-	assert_eq!(res, vec!["staging-next-30.05"]);
+        let res = next_branches("staging-30.05");
+        assert_eq!(res, vec!["staging-next-30.05"]);
     }
 
     #[test]
     fn staging_00_11() {
-	let res = next_branches("staging-00.11");
-	assert_eq!(res, vec!["staging-next-00.11"]);
+        let res = next_branches("staging-00.11");
+        assert_eq!(res, vec!["staging-next-00.11"]);
     }
 
     #[test]
     fn staging_next_21_05() {
-	let res = next_branches("staging-next-21.05");
-	assert_eq!(res, vec!["release-21.05"]);
+        let res = next_branches("staging-next-21.05");
+        assert_eq!(res, vec!["release-21.05"]);
     }
 
     #[test]
     fn release_20_09() {
-	let res = next_branches("release-20.09");
-	assert_eq!(res, vec!["nixpkgs-20.09-darwin", "nixos-20.09-small"]);
+        let res = next_branches("release-20.09");
+        assert_eq!(res, vec!["nixpkgs-20.09-darwin", "nixos-20.09-small"]);
     }
 }

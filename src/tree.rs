@@ -46,7 +46,11 @@ impl Tree {
         }
     }
 
-    pub async fn make(base_branch: String, merge_status: &github::PullRequestStatus, nixpkgs: &Nixpkgs<'_>) -> Tree {
+    pub async fn make(
+        base_branch: String,
+        merge_status: &github::PullRequestStatus,
+        nixpkgs: &Nixpkgs<'_>,
+    ) -> Tree {
         let mut missing_means_absent = true;
         let mut branches = BTreeSet::new();
 
@@ -59,9 +63,9 @@ impl Tree {
             if let Some(merge_commit) = merge_commit_oid {
                 let mut containing_commits = BTreeSet::new();
 
-                if let Err(e) =
-                    nixpkgs.branches_containing_commit(&merge_commit, &mut containing_commits)
-                        .await
+                if let Err(e) = nixpkgs
+                    .branches_containing_commit(&merge_commit, &mut containing_commits)
+                    .await
                 {
                     eprintln!("pr-tracker: branches_containing_commit: {}", e);
                     missing_means_absent = false;
