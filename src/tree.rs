@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH GPL-3.0-linking-exception
 // SPDX-FileCopyrightText: 2021 Alyssa Ross <hi@alyssa.is>
+// SPDX-FileCopyrightText: 2022 Arnout Engelen <arnout@bzzt.net>
 
 use std::collections::BTreeSet;
 use std::ffi::{OsStr, OsString};
 
 use askama::Template;
 
+use crate::branches::branch_hydra_link;
 use crate::branches::next_branches;
 use crate::github;
 use crate::nixpkgs::Nixpkgs;
@@ -15,6 +17,7 @@ use crate::nixpkgs::Nixpkgs;
 pub struct Tree {
     branch_name: String,
     accepted: Option<bool>,
+    hydra_link: Option<String>,
     children: Vec<Tree>,
 }
 
@@ -27,9 +30,12 @@ impl Tree {
             .map(|b| Self::generate(b.to_string(), found_branches))
             .collect();
 
+        let link = branch_hydra_link(&branch).map(|l| l.to_string());
+
         Tree {
             accepted: None,
             branch_name: branch,
+            hydra_link: link,
             children: nexts,
         }
     }

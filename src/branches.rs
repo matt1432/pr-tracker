@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH GPL-3.0-linking-exception
 // SPDX-FileCopyrightText: 2021 Alyssa Ross <hi@alyssa.is>
+// SPDX-FileCopyrightText: 2022 Arnout Engelen <arnout@bzzt.net>
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -57,14 +58,64 @@ pub fn next_branches(branch: &str) -> Vec<Cow<str>> {
         .collect()
 }
 
+const BRANCH_HYDRA_LINK_TABLE: [(&str, &str); 4] = [
+    (r"\Anixpkgs-unstable\z", "nixpkgs/trunk/unstable"),
+    (r"\Anixos-unstable-small\z", "nixos/unstable-small/tested"),
+    (r"\Anixos-unstable\z", "nixos/trunk-combined/tested"),
+    (r"\Anixos-(\d.*)\z", "nixos/release-$1/tested"),
+];
+
+static BRANCH_HYDRA_LINK_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
+    BRANCH_HYDRA_LINKS
+        .keys()
+        .copied()
+        .map(Regex::new)
+        .map(Result::unwrap)
+        .collect()
+});
+
+static BRANCH_HYDRA_LINKS: Lazy<BTreeMap<&str, &str>> = Lazy::new(|| {
+    BRANCH_HYDRA_LINK_TABLE
+        .iter()
+        .fold(BTreeMap::new(), |mut map, (pattern, next)| {
+            // TODO throw an error when this does not return None?
+            map.insert(pattern, next);
+            map
+        })
+});
+
+static BRANCH_HYDRA_LINKS_BY_INDEX: Lazy<Vec<&str>> =
+    Lazy::new(|| BRANCH_HYDRA_LINKS.values().cloned().collect());
+
+static BRANCH_HYDRA_LINK_REGEXES: Lazy<RegexSet> =
+    Lazy::new(|| RegexSet::new(BRANCH_HYDRA_LINKS.keys()).unwrap());
+
+pub fn branch_hydra_link(branch: &str) -> Option<String> {
+    BRANCH_HYDRA_LINK_REGEXES
+        .matches(branch)
+        .iter()
+        .next()
+        .map(|index| {
+            let regex = BRANCH_HYDRA_LINK_PATTERNS.get(index).unwrap();
+            BRANCH_HYDRA_LINKS_BY_INDEX
+                .get(index)
+                .map(move |link| regex.replace(branch, *link))
+                .map(move |l| format!("https://hydra.nixos.org/job/{}#tabs-constituents", l))
+        })
+        .flatten()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn staging_18_03() {
-        let res = next_branches("staging-18.03");
-        assert_eq!(res, vec!["release-18.03"]);
+        let branch = "staging-18.03";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["release-18.03"]);
+        let link = branch_hydra_link(branch);
+        assert_eq!(link, None);
     }
 
     #[test]
@@ -101,5 +152,35 @@ mod tests {
     fn release_20_09() {
         let res = next_branches("release-20.09");
         assert_eq!(res, vec!["nixpkgs-20.09-darwin", "nixos-20.09-small"]);
+    }
+
+    #[test]
+    fn nixpkgs_unstable() {
+        let branch = "nixpkgs-unstable";
+        let next = next_branches(branch);
+        assert!(next.is_empty());
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/job/nixpkgs/trunk/unstable#tabs-constituents";
+        assert_eq!(link.unwrap(), expected);
+    }
+
+    #[test]
+    fn nixos_unstable_small() {
+        let branch = "nixos-unstable-small";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["nixos-unstable"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/job/nixos/unstable-small/tested#tabs-constituents";
+        assert_eq!(link.unwrap(), expected);
+    }
+
+    #[test]
+    fn nixos_unstable() {
+        let branch = "nixos-unstable";
+        let next = next_branches(branch);
+        assert_eq!(next.len(), 0);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/job/nixos/trunk-combined/tested#tabs-constituents";
+        assert_eq!(link.unwrap(), expected);
     }
 }
