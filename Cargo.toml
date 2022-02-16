@@ -31,7 +31,3 @@ features = ["attributes"]
 version = "0.16.0"
 default-features = false
 features = ["h1-server", "logger"]
-
-[patch.crates-io]
-# https://github.com/djc/askama/pull/447
-askama = { git = "https://github.com/djc/askama", branch = "main" }
