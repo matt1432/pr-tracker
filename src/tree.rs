@@ -30,7 +30,7 @@ impl Tree {
             .map(|b| Self::generate(b.to_string(), found_branches))
             .collect();
 
-        let link = branch_hydra_link(&branch).map(|l| l.to_string());
+        let link = branch_hydra_link(&branch);
 
         Tree {
             accepted: None,
@@ -70,7 +70,7 @@ impl Tree {
                 let mut containing_commits = BTreeSet::new();
 
                 if let Err(e) = nixpkgs
-                    .branches_containing_commit(&merge_commit, &mut containing_commits)
+                    .branches_containing_commit(merge_commit, &mut containing_commits)
                     .await
                 {
                     eprintln!("pr-tracker: branches_containing_commit: {}", e);

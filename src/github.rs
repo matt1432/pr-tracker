@@ -117,7 +117,7 @@ impl<'a> GitHub<'a> {
     fn authorization_header(&self) -> Result<HeaderValue, surf::Error> {
         let mut value = b"bearer ".to_vec();
         value.extend_from_slice(self.token.as_bytes());
-        Ok(HeaderValue::from_bytes(value)?)
+        HeaderValue::from_bytes(value)
     }
 
     pub async fn pr_info_for_nixpkgs_pr(&self, pr: i64) -> Result<PrInfo, Error> {

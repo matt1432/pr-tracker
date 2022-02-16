@@ -162,7 +162,7 @@ async fn main() {
         E: std::error::Error,
     {
         match result {
-            Ok(v) => return v,
+            Ok(v) => v,
             Err(e) => {
                 eprintln!("pr-tracker: {}: {}", message.as_ref(), e);
                 exit(code);
