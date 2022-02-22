@@ -2,6 +2,7 @@ SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2021-2022 Alyssa Ross <hi@alyssa.is>
 
 • Add links to Hydra
+• Add missing space before "(closed)" in PR title
 • Update dependencies
 
 pr-tracker 1.1.0 (2021-06-06)
