@@ -8,10 +8,11 @@ use std::collections::BTreeMap;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-const NEXT_BRANCH_TABLE: [(&str, &str); 10] = [
+const NEXT_BRANCH_TABLE: [(&str, &str); 11] = [
     (r"\Astaging\z", "staging-next"),
     (r"\Astaging-next\z", "master"),
     (r"\Astaging-next-([\d.]+)\z", "release-$1"),
+    (r"\Ahaskell-updates\z", "master"),
     (r"\Amaster\z", "nixpkgs-unstable"),
     (r"\Amaster\z", "nixos-unstable-small"),
     (r"\Anixos-(.*)-small\z", "nixos-$1"),
@@ -145,6 +146,13 @@ mod tests {
     fn staging_next_21_05() {
         let res = next_branches("staging-next-21.05");
         assert_eq!(res, vec!["release-21.05"]);
+    }
+
+    #[test]
+    fn haskell_updates() {
+        let branch = "haskell-updates";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["master"]);
     }
 
     #[test]
