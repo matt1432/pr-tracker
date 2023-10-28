@@ -8,7 +8,8 @@ use std::collections::BTreeMap;
 use once_cell::sync::Lazy;
 use regex::{Regex, RegexSet};
 
-const NEXT_BRANCH_TABLE: [(&str, &str); 11] = [
+const NEXT_BRANCH_TABLE: [(&str, &str); 12] = [
+    (r"\Apython-updates\z", "staging"),
     (r"\Astaging\z", "staging-next"),
     (r"\Astaging-next\z", "master"),
     (r"\Astaging-next-([\d.]+)\z", "release-$1"),
@@ -108,6 +109,12 @@ pub fn branch_hydra_link(branch: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn python_updates() {
+        let res = next_branches("python-updates");
+        assert_eq!(res, vec!["staging"]);
+    }
 
     #[test]
     fn staging_18_03() {
