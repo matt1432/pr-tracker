@@ -95,14 +95,13 @@ pub fn branch_hydra_link(branch: &str) -> Option<String> {
         .matches(branch)
         .iter()
         .next()
-        .map(|index| {
+        .and_then(|index| {
             let regex = BRANCH_HYDRA_LINK_PATTERNS.get(index).unwrap();
             BRANCH_HYDRA_LINKS_BY_INDEX
                 .get(index)
                 .map(move |link| regex.replace(branch, *link))
                 .map(move |l| format!("https://hydra.nixos.org/job/{}#tabs-constituents", l))
         })
-        .flatten()
 }
 
 #[cfg(test)]

@@ -56,7 +56,7 @@ impl<'a> Nixpkgs<'a> {
     fn git_command(&self, subcommand: impl AsRef<OsStr>) -> Command {
         let mut command = Command::new("git");
         command.arg("-C");
-        command.arg(&self.path);
+        command.arg(self.path);
         command.arg(subcommand);
         command
     }
@@ -64,7 +64,7 @@ impl<'a> Nixpkgs<'a> {
     async fn git_branch_contains(&self, commit: &str) -> Result<Vec<u8>> {
         let output = self
             .git_command("branch")
-            .args(&["-r", "--format=%(refname)", "--contains"])
+            .args(["-r", "--format=%(refname)", "--contains"])
             .arg(commit)
             .stderr(Stdio::inherit())
             .output()
@@ -79,7 +79,7 @@ impl<'a> Nixpkgs<'a> {
     async fn git_fetch_nixpkgs(&self) -> Result<()> {
         // TODO: add refspecs
         self.git_command("fetch")
-            .arg(&self.remote_name)
+            .arg(self.remote_name)
             .status()
             .await
             .map_err(Error::Io)
@@ -109,7 +109,7 @@ impl<'a> Nixpkgs<'a> {
         };
 
         let mut prefix = PathBuf::from("refs/remotes/");
-        prefix.push(&self.remote_name);
+        prefix.push(self.remote_name);
 
         for branch_name in output
             .split(|byte| *byte == b'\n')

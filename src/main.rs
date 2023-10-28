@@ -188,7 +188,7 @@ async fn main() {
 
     let mut listeners: Vec<Pin<Box<dyn Future<Output = _>>>> = Vec::new();
 
-    for fd in (3..).into_iter().take(fd_count as usize) {
+    for fd in (3..).take(fd_count as usize) {
         let s = server.clone();
         if handle_error(is_socket_inet(fd), 74, "sd_is_socket_inet") {
             listeners.push(Box::pin(s.listen(unsafe { TcpListener::from_raw_fd(fd) })));
