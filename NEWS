@@ -1,5 +1,9 @@
 SPDX-License-Identifier: CC0-1.0
-SPDX-FileCopyrightText: 2021-2022 Alyssa Ross <hi@alyssa.is>
+SPDX-FileCopyrightText: 2021-2023 Alyssa Ross <hi@alyssa.is>
+
+• Add links to Hydra jobsets for development branches.
+• Add support for haskell-updates and python-updates.
+• Update dependencies
 
 pr-tracker 1.2.0 (2022-03-22)
 =============================
