@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH GPL-3.0-linking-exception
-// SPDX-FileCopyrightText: 2021 Alyssa Ross <hi@alyssa.is>
+// SPDX-FileCopyrightText: 2021, 2023 Alyssa Ross <hi@alyssa.is>
 // SPDX-FileCopyrightText: 2022 Arnout Engelen <arnout@bzzt.net>
 
 use std::borrow::Cow;
@@ -21,6 +21,25 @@ const NEXT_BRANCH_TABLE: [(&str, &str); 12] = [
     (r"\Arelease-([\d.]+)\z", "nixos-$1-small"),
     (r"\Astaging-((1.|20)\.\d{2})\z", "release-$1"),
     (r"\Astaging-((2[1-9]|[3-90].)\.\d{2})\z", "staging-next-$1"),
+];
+
+const BRANCH_HYDRA_LINK_TABLE: [(&str, &str); 5] = [
+    (r"\Apython-updates\z", "nixpkgs/python-updates"),
+    (r"\Astaging-next\z", "nixpkgs/staging-next"),
+    // There's no staging-next-21.11 for some reason.
+    (
+        r"\Astaging-next-([013-9]\d\.\d{2}|2(1\.05|[2-90]\.\d{2}))\z",
+        "nixpkgs/staging-next-$1",
+    ),
+    (r"\Ahaskell-updates\z", "nixpkgs/haskell-updates"),
+    (r"\Amaster\z", "nixpkgs/trunk"),
+];
+
+const CHANNEL_HYDRA_LINK_TABLE: [(&str, &str); 4] = [
+    (r"\Anixpkgs-unstable\z", "nixpkgs/trunk/unstable"),
+    (r"\Anixos-unstable-small\z", "nixos/unstable-small/tested"),
+    (r"\Anixos-unstable\z", "nixos/trunk-combined/tested"),
+    (r"\Anixos-(\d.*)\z", "nixos/release-$1/tested"),
 ];
 
 static BRANCH_NEXTS: Lazy<BTreeMap<&str, Vec<&str>>> = Lazy::new(|| {
@@ -60,13 +79,6 @@ pub fn next_branches(branch: &str) -> Vec<Cow<str>> {
         .collect()
 }
 
-const BRANCH_HYDRA_LINK_TABLE: [(&str, &str); 4] = [
-    (r"\Anixpkgs-unstable\z", "nixpkgs/trunk/unstable"),
-    (r"\Anixos-unstable-small\z", "nixos/unstable-small/tested"),
-    (r"\Anixos-unstable\z", "nixos/trunk-combined/tested"),
-    (r"\Anixos-(\d.*)\z", "nixos/release-$1/tested"),
-];
-
 static BRANCH_HYDRA_LINK_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
     BRANCH_HYDRA_LINKS
         .keys()
@@ -76,17 +88,23 @@ static BRANCH_HYDRA_LINK_PATTERNS: Lazy<Vec<Regex>> = Lazy::new(|| {
         .collect()
 });
 
-static BRANCH_HYDRA_LINKS: Lazy<BTreeMap<&str, &str>> = Lazy::new(|| {
-    BRANCH_HYDRA_LINK_TABLE
-        .iter()
-        .fold(BTreeMap::new(), |mut map, (pattern, next)| {
-            // TODO throw an error when this does not return None?
-            map.insert(pattern, next);
-            map
-        })
+static BRANCH_HYDRA_LINKS: Lazy<BTreeMap<&str, String>> = Lazy::new(|| {
+    let branch_links = BRANCH_HYDRA_LINK_TABLE.iter().map(|(pattern, jobset)| {
+        (
+            *pattern,
+            format!("https://hydra.nixos.org/jobset/{jobset}#tabs-jobs"),
+        )
+    });
+    let channel_links = CHANNEL_HYDRA_LINK_TABLE.iter().map(|(pattern, job)| {
+        (
+            *pattern,
+            format!("https://hydra.nixos.org/job/{job}#tabs-constituents"),
+        )
+    });
+    branch_links.chain(channel_links).collect()
 });
 
-static BRANCH_HYDRA_LINKS_BY_INDEX: Lazy<Vec<&str>> =
+static BRANCH_HYDRA_LINKS_BY_INDEX: Lazy<Vec<String>> =
     Lazy::new(|| BRANCH_HYDRA_LINKS.values().cloned().collect());
 
 static BRANCH_HYDRA_LINK_REGEXES: Lazy<RegexSet> =
@@ -101,8 +119,7 @@ pub fn branch_hydra_link(branch: &str) -> Option<String> {
             let regex = BRANCH_HYDRA_LINK_PATTERNS.get(index).unwrap();
             BRANCH_HYDRA_LINKS_BY_INDEX
                 .get(index)
-                .map(move |link| regex.replace(branch, *link))
-                .map(move |l| format!("https://hydra.nixos.org/job/{}#tabs-constituents", l))
+                .map(move |link| regex.replace(branch, link).to_string())
         })
 }
 
@@ -114,6 +131,16 @@ mod tests {
     fn python_updates() {
         let res = next_branches("python-updates");
         assert_eq!(res, vec!["staging"]);
+    }
+
+    #[test]
+    fn staging_next() {
+        let branch = "staging-next";
+        let res = next_branches(branch);
+        assert_eq!(res, vec!["master"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/jobset/nixpkgs/staging-next#tabs-jobs";
+        assert_eq!(link.unwrap(), expected);
     }
 
     #[test]
@@ -151,8 +178,40 @@ mod tests {
 
     #[test]
     fn staging_next_21_05() {
-        let res = next_branches("staging-next-21.05");
+        let branch = "staging-next-21.05";
+        let res = next_branches(branch);
         assert_eq!(res, vec!["release-21.05"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/jobset/nixpkgs/staging-next-21.05#tabs-jobs";
+        assert_eq!(link.unwrap(), expected);
+    }
+
+    #[test]
+    fn staging_next_21_11() {
+        let branch = "staging-next-21.11";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["release-21.11"]);
+        assert!(branch_hydra_link(branch).is_none());
+    }
+
+    #[test]
+    fn staging_next_22_05() {
+        let branch = "staging-next-22.05";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["release-22.05"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/jobset/nixpkgs/staging-next-22.05#tabs-jobs";
+        assert_eq!(link.unwrap(), expected);
+    }
+
+    #[test]
+    fn staging_next_30_05() {
+        let branch = "staging-next-30.05";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["release-30.05"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/jobset/nixpkgs/staging-next-30.05#tabs-jobs";
+        assert_eq!(link.unwrap(), expected);
     }
 
     #[test]
@@ -160,6 +219,16 @@ mod tests {
         let branch = "haskell-updates";
         let next = next_branches(branch);
         assert_eq!(next, vec!["master"]);
+    }
+
+    #[test]
+    fn master() {
+        let branch = "master";
+        let next = next_branches(branch);
+        assert_eq!(next, vec!["nixpkgs-unstable", "nixos-unstable-small"]);
+        let link = branch_hydra_link(branch);
+        let expected = "https://hydra.nixos.org/jobset/nixpkgs/trunk#tabs-jobs";
+        assert_eq!(link.unwrap(), expected);
     }
 
     #[test]
