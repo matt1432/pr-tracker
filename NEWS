@@ -1,6 +1,9 @@
 SPDX-License-Identifier: CC0-1.0
 SPDX-FileCopyrightText: 2021-2023 Alyssa Ross <hi@alyssa.is>
 
+pr-tracker 1.4.0 (2023-11-18)
+=============================
+
 • Add <meta name="viewport"> for better mobile display
 • Update dependencies
 
