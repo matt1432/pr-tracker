@@ -5,6 +5,7 @@ SPDX-FileCopyrightText: 2021-2023 Alyssa Ross <hi@alyssa.is>
 • Update dependencies
 
 pr-tracker 1.3.0 (2023-10-28)
+=============================
 
 • Add links to Hydra jobsets for development branches.
 • Add support for haskell-updates and python-updates.
