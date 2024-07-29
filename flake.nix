@@ -61,7 +61,22 @@
       # crane exposes a function that takes some configuration arguments.
       # Common settings that we need for all of these are grouped here.
       commonArgs = {
-        src = craneLib.cleanCargoSource (craneLib.path ./.);
+        src = let
+          isGraphqlFile = path: _type: builtins.match ".*graphql" path != null;
+          isHtmlFile = path: _type: builtins.match ".*html" path != null;
+          isJsonFile = path: _type: builtins.match ".*json" path != null;
+          isSourceFile = path: type:
+            isGraphqlFile path type
+            || isHtmlFile path type
+            || isJsonFile path type
+            || craneLib.filterCargoSources path type;
+        in
+          lib.cleanSourceWith {
+            src = craneLib.path ./.;
+            filter = isSourceFile;
+          };
+
+        nativeBuildInputs = [pkgs.pkg-config];
 
         # External packages required to compile this project.
         # For normal rust applications this would contain runtime dependencies,
