@@ -1,5 +1,10 @@
 SPDX-License-Identifier: CC0-1.0
-SPDX-FileCopyrightText: 2021-2023 Alyssa Ross <hi@alyssa.is>
+SPDX-FileCopyrightText: 2021-2024 Alyssa Ross <hi@alyssa.is>
+
+• Adjust text input size to make overflow more obvious
+• Don't log every GitHub response
+• Run git branch --contains more efficiently
+• Update dependencies
 
 pr-tracker 1.4.0 (2023-11-18)
 =============================
