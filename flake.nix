@@ -52,42 +52,7 @@
         rustc = toolchain;
       });
     in {
-      pr-tracker = pkgs.callPackage ({
-        lib,
-        openssl,
-        pkg-config,
-        stdenv,
-        systemd,
-        libiconv ? {},
-        ...
-      }: let
-        inherit (builtins.fromTOML (builtins.readFile ./Cargo.toml)) package;
-      in
-        rustPlatform.buildRustPackage {
-          name = package.name;
-          inherit (package) version;
-
-          src = lib.cleanSourceWith {
-            filter = name: _type: let
-              baseName = baseNameOf (toString name);
-            in
-              !(lib.hasSuffix ".nix" baseName);
-            src = lib.cleanSource ./.;
-          };
-
-          cargoLock.lockFile = ./Cargo.lock;
-
-          nativeBuildInputs = [pkg-config];
-          buildInputs =
-            [
-              systemd
-              openssl
-            ]
-            ++ lib.optionals stdenv.isDarwin [
-              libiconv
-            ];
-        }) {};
-
+      pr-tracker = pkgs.callPackage ./nix/package.nix {inherit rustPlatform;};
       default = self.packages.${pkgs.system}.pr-tracker;
     });
 
