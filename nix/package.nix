@@ -5,6 +5,7 @@
   stdenv,
   systemd,
   rustPlatform,
+  rev ? "dirty",
   libiconv ? {},
   ...
 }: let
@@ -12,7 +13,10 @@
 in
   rustPlatform.buildRustPackage {
     pname = package.name;
-    inherit (package) version;
+    version =
+      if rev == "release"
+      then package.version
+      else "${package.version}-${rev}";
 
     src = lib.cleanSourceWith {
       filter = name: _type: let

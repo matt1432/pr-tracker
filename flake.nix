@@ -52,7 +52,10 @@
         rustc = toolchain;
       });
     in {
-      pr-tracker = pkgs.callPackage ./nix/package.nix {inherit rustPlatform;};
+      pr-tracker = pkgs.callPackage ./nix/package.nix {
+        inherit rustPlatform;
+        rev = self.shortRev or "dirty";
+      };
       default = self.packages.${pkgs.system}.pr-tracker;
     });
 
