@@ -44,6 +44,11 @@
           ];
         }));
   in {
+    nixosModules = {
+      pr-tracker = import ./nix/module.nix self;
+      default = self.nixosModules.pr-tracker;
+    };
+
     packages = perSystem (pkgs: let
       rustPlatform = let
         toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
