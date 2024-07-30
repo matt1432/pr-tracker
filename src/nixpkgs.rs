@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH GPL-3.0-linking-exception
-// SPDX-FileCopyrightText: 2021 Alyssa Ross <hi@alyssa.is>
+// SPDX-FileCopyrightText: 2021, 2024 Alyssa Ross <hi@alyssa.is>
 
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
@@ -61,11 +61,21 @@ impl<'a> Nixpkgs<'a> {
         command
     }
 
-    async fn git_branch_contains(&self, commit: &str) -> Result<Vec<u8>> {
-        let output = self
-            .git_command("branch")
-            .args(["-r", "--format=%(refname)", "--contains"])
-            .arg(commit)
+    async fn git_branch_contains(
+        &self,
+        candidates: &BTreeSet<&str>,
+        commit: &str,
+    ) -> Result<Vec<u8>> {
+        let mut command = self.git_command("branch");
+        command.args(["-r", "--format=%(refname)", "--contains"]);
+        command.arg(commit);
+        command.arg("--");
+
+        for candidate in candidates {
+            command.arg(self.remote_name.join(candidate));
+        }
+
+        let output = command
             .stderr(Stdio::inherit())
             .output()
             .await
@@ -88,10 +98,11 @@ impl<'a> Nixpkgs<'a> {
 
     pub async fn branches_containing_commit(
         &self,
+        candidates: &BTreeSet<&str>,
         commit: &str,
         out: &mut BTreeSet<OsString>,
     ) -> Result<()> {
-        let output = match self.git_branch_contains(commit).await {
+        let output = match self.git_branch_contains(candidates, commit).await {
             Err(Error::ExitFailure(status)) if status.code().is_some() => {
                 eprintln!("pr-tracker: git branch --contains failed; updating branches");
 
@@ -101,7 +112,7 @@ impl<'a> Nixpkgs<'a> {
                     // need before dying.
                 }
 
-                self.git_branch_contains(commit).await?
+                self.git_branch_contains(candidates, commit).await?
             }
 
             Ok(output) => output,

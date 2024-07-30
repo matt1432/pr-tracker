@@ -46,7 +46,7 @@ static BRANCH_NEXTS: Lazy<BTreeMap<&str, Vec<&str>>> = Lazy::new(|| {
     NEXT_BRANCH_TABLE
         .iter()
         .fold(BTreeMap::new(), |mut map, (pattern, next)| {
-            map.entry(pattern).or_insert_with(Vec::new).push(next);
+            map.entry(pattern).or_default().push(next);
             map
         })
 });

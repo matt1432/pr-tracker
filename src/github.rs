@@ -127,7 +127,7 @@ impl<'a> GitHub<'a> {
             number: pr,
         });
 
-        let response = surf::post("https://api.github.com/graphql")
+        let mut response = surf::post("https://api.github.com/graphql")
             .header("Accept", "application/vnd.github.merge-info-preview+json")
             .header(
                 "User-Agent",
@@ -150,10 +150,8 @@ impl<'a> GitHub<'a> {
             return Err(Error::Response(status));
         }
 
-        let data: GitHubGraphQLResponse<pr_info_query::ResponseData> = dbg!(response)
-            .body_json()
-            .await
-            .map_err(Error::Deserialization)?;
+        let data: GitHubGraphQLResponse<pr_info_query::ResponseData> =
+            response.body_json().await.map_err(Error::Deserialization)?;
 
         let pr = data
             .data
