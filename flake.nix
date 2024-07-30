@@ -46,21 +46,19 @@
   in {
     nixosModules = {
       pr-tracker = import ./nix/module.nix self;
+
       default = self.nixosModules.pr-tracker;
     };
 
-    packages = perSystem (pkgs: let
-      rustPlatform = let
-        toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
-      in (pkgs.makeRustPlatform {
-        cargo = toolchain;
-        rustc = toolchain;
-      });
-    in {
+    packages = perSystem (pkgs: {
       pr-tracker = pkgs.callPackage ./nix/package.nix {
-        inherit rustPlatform;
         rev = self.shortRev or "dirty";
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+          rustc = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+        };
       };
+
       default = self.packages.${pkgs.system}.pr-tracker;
     });
 
