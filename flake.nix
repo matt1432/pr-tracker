@@ -1,161 +1,104 @@
 {
-  description = "Finding things to do";
   inputs = {
-    advisory-db = {
-      url = "github:rustsec/advisory-db";
-      flake = false;
+    nixpkgs = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      ref = "nixos-unstable";
     };
 
-    crane = {
-      url = "github:ipetkov/crane";
+    rust-overlay = {
+      type = "github";
+      owner = "oxalica";
+      repo = "rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     devshell = {
-      url = "github:numtide/devshell";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+      type = "github";
+      owner = "numtide";
+      repo = "devshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs = {
     self,
-    advisory-db,
-    devshell,
-    crane,
-    flake-utils,
     nixpkgs,
-    pre-commit-hooks,
     rust-overlay,
-  } @ inputs:
-    flake-utils.lib.eachDefaultSystem (localSystem: let
-      pkgs = import nixpkgs {
-        inherit localSystem;
-        overlays = [
-          devshell.overlays.default
-          rust-overlay.overlays.default
-        ];
-      };
-      inherit (pkgs) lib;
+    devshell,
+    ...
+  }: let
+    supportedSystems = [
+      "x86_64-linux"
+      "aarch64-linux"
+    ];
 
-      # TODO: change this to your desired project name
-      projectName = "pr-tracker";
-
-      # Use that toolchain to get a crane lib. Crane is used here to write the
-      # nix packages that compile and test our rust code.
-      craneLib = crane.mkLib pkgs;
-
-      # For each of the classical cargo "functions" like build, doc, test, ...,
-      # crane exposes a function that takes some configuration arguments.
-      # Common settings that we need for all of these are grouped here.
-      commonArgs = {
-        src = let
-          isGraphqlFile = path: _type: builtins.match ".*graphql" path != null;
-          isHtmlFile = path: _type: builtins.match ".*html" path != null;
-          isJsonFile = path: _type: builtins.match ".*json" path != null;
-          isSourceFile = path: type:
-            isGraphqlFile path type
-            || isHtmlFile path type
-            || isJsonFile path type
-            || craneLib.filterCargoSources path type;
-        in
-          lib.cleanSourceWith {
-            src = craneLib.path ./.;
-            filter = isSourceFile;
-          };
-
-        nativeBuildInputs = [pkgs.pkg-config];
-
-        # External packages required to compile this project.
-        # For normal rust applications this would contain runtime dependencies,
-        # but since we are compiling for a foreign platform this is most likely
-        # going to stay empty except for the linker.
-        buildInputs =
-          [
-            pkgs.systemd
-            pkgs.openssl
-            # Add additional build inputs here
-          ]
-          ++ lib.optionals pkgs.stdenv.isDarwin [
-            # Additional darwin specific inputs can be set here
-            pkgs.libiconv
+    perSystem = attrs:
+      nixpkgs.lib.genAttrs supportedSystems (system:
+        attrs (import nixpkgs {
+          inherit system;
+          overlays = [
+            devshell.overlays.default
+            rust-overlay.overlays.default
           ];
-      };
-
-      # Build *just* the cargo dependencies, so we can reuse
-      # all of that work (e.g. via cachix) when running in CI
-      cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-      # Build the actual package
-      package = craneLib.buildPackage (commonArgs
-        // {
-          inherit cargoArtifacts;
-        });
+        }));
+  in {
+    packages = perSystem (pkgs: let
+      rustPlatform = let
+        toolchain = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
+      in (pkgs.makeRustPlatform {
+        cargo = toolchain;
+        rustc = toolchain;
+      });
     in {
-      # Define checks that can be run with `nix flake check`
-      checks =
-        {
-          # Build the crate normally as part of checking, for convenience
-          ${projectName} = package;
+      pr-tracker = pkgs.callPackage ({
+        lib,
+        openssl,
+        pkg-config,
+        stdenv,
+        systemd,
+        libiconv ? {},
+        ...
+      }: let
+        inherit (builtins.fromTOML (builtins.readFile ./Cargo.toml)) package;
+      in
+        rustPlatform.buildRustPackage {
+          name = package.name;
+          inherit (package) version;
 
-          # Run clippy (and deny all warnings) on the crate source,
-          # again, resuing the dependency artifacts from above.
-          #
-          # Note that this is done as a separate derivation so that
-          # we can block the CI if there are issues here, but not
-          # prevent downstream consumers from building our crate by itself.
-          "${projectName}-clippy" = craneLib.cargoClippy (commonArgs
-            // {
-              inherit cargoArtifacts;
-              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
-            });
-
-          "${projectName}-doc" = craneLib.cargoDoc (commonArgs
-            // {
-              inherit cargoArtifacts;
-            });
-
-          # Check formatting
-          "${projectName}-fmt" = craneLib.cargoFmt {
-            inherit (commonArgs) src;
+          src = lib.cleanSourceWith {
+            filter = name: _type: let
+              baseName = baseNameOf (toString name);
+            in
+              !(lib.hasSuffix ".nix" baseName);
+            src = lib.cleanSource ./.;
           };
 
-          # Audit dependencies
-          "${projectName}-audit" = craneLib.cargoAudit {
-            inherit (commonArgs) src;
-            inherit advisory-db;
-          };
-        }
-        // {
-          pre-commit = pre-commit-hooks.lib.${localSystem}.run {
-            src = ./.;
-            hooks = {
-              alejandra.enable = true;
-              cargo-check.enable = true;
-              rustfmt.enable = true;
-              statix.enable = true;
-            };
-          };
-        };
+          cargoLock.lockFile = ./Cargo.lock;
 
-      packages.default = package; # `nix build`
-      packages.${projectName} = package; # `nix build .#${projectName}`
+          nativeBuildInputs = [pkg-config];
+          buildInputs =
+            [
+              systemd
+              openssl
+            ]
+            ++ lib.optionals stdenv.isDarwin [
+              libiconv
+            ];
+        }) {};
 
-      # `nix develop`
-      devShells.default = pkgs.devshell.mkShell {
-        name = projectName;
+      default = self.packages.${pkgs.system}.pr-tracker;
+    });
+
+    formatter = perSystem (pkgs: pkgs.alejandra);
+
+    devShells = perSystem (pkgs: let
+      mainPackage = self.packages.${pkgs.system}.default;
+    in {
+      default = pkgs.devshell.mkShell {
+        inherit (mainPackage) name;
+
         imports = [
           "${devshell}/extra/language/c.nix"
           "${devshell}/extra/language/rust.nix"
@@ -168,30 +111,13 @@
           openssl
         ];
 
-        commands = [
-          {
-            package = pkgs.alejandra;
-            help = "Format nix code";
-          }
-          {
-            package = pkgs.statix;
-            help = "Lint nix code";
-          }
-          {
-            package = pkgs.deadnix;
-            help = "Find unused expressions in nix code";
-          }
-        ];
-
-        devshell.startup.pre-commit.text = self.checks.${localSystem}.pre-commit.shellHook;
         packages =
-          commonArgs.buildInputs
+          mainPackage.buildInputs
           ++ [
             pkgs.pkg-config
             pkgs.rust-analyzer
           ];
       };
-
-      formatter = pkgs.alejandra; # `nix fmt`
     });
+  };
 }
