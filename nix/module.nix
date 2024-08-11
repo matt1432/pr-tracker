@@ -134,6 +134,7 @@ in {
 
           ExecStart = concatStringsSep " " [
             (getExe cfg.package)
+            "--env"
             "--source-url ${escapeShellArg cfg.sourceUrl}"
             "--user-agent ${escapeShellArg cfg.userAgent}"
             "--path nixpkgs"
