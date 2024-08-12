@@ -24,7 +24,7 @@ in {
         Path to a file containing your GitHub API token like so:
 
         ```env
-        PR_TRACKER_GITHUB_TOKEN=ghp_...
+        ghp_...
         ```
       '';
     };
@@ -130,18 +130,17 @@ in {
           PrivateDevices = true;
           StateDirectoryMode = "0700";
 
+          StandardInput = "file:${cfg.githubApiTokenFile}";
+
           ExecStartPre = prestart;
 
           ExecStart = concatStringsSep " " [
             (getExe cfg.package)
-            "--env"
             "--source-url ${escapeShellArg cfg.sourceUrl}"
             "--user-agent ${escapeShellArg cfg.userAgent}"
             "--path nixpkgs"
             "--remote origin"
           ];
-
-          EnvironmentFile = cfg.githubApiTokenFile;
 
           # Hardening
           CapabilityBoundingSet = "";
@@ -194,8 +193,6 @@ in {
           User = cfg.user;
           Group = cfg.group;
           Type = "oneshot";
-
-          EnvironmentFile = cfg.githubApiTokenFile;
 
           StateDirectory = builtins.baseNameOf cfg.dataDir;
           WorkingDirectory = cfg.dataDir;
