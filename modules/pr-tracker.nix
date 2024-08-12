@@ -1,22 +1,18 @@
-self: {
+{
   config,
   lib,
   pkgs,
   ...
 }: let
-  inherit (lib) concatStringsSep escapeShellArg getExe mkEnableOption mkIf mkOption optionalAttrs types;
+  inherit (lib) concatStringsSep escapeShellArg getExe mkIf optionalAttrs types;
+  inherit (lib.options) mkEnableOption mkOption mkPackageOption;
 
   cfg = config.services.pr-tracker;
-
-  pr-trackerPkg = self.packages.${pkgs.system}.default;
 in {
   options.services.pr-tracker = {
     enable = mkEnableOption "pr-tracker";
 
-    package = mkOption {
-      type = types.package;
-      default = pr-trackerPkg;
-    };
+    package = mkPackageOption pkgs "pr-tracker" {};
 
     githubApiTokenFile = mkOption {
       type = types.path;
