@@ -145,7 +145,7 @@ in {
   config = let
     useClone = cfg.nixpkgsClone.managedByModule;
 
-    prestart = pkgs.writeShellApplication {
+    prestart = "${pkgs.writeShellApplication {
       name = "pr-tracker-pre";
       runtimeInputs = [pkgs.git];
 
@@ -154,7 +154,7 @@ in {
             git clone https://github.com/NixOS/nixpkgs.git ${cfg.nixpkgsClone.cloneDir}
         fi
       '';
-    };
+    }}/bin/pr-tracker-pre";
 
     commonUnitSettings = {
       User = cfg.user;
