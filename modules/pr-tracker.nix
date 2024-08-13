@@ -19,6 +19,8 @@ in {
 
     githubApiTokenFile = mkOption {
       type = types.path;
+      example = "/run/secrets/gh-token";
+
       description = ''
         Path to a file containing your GitHub API token like so:
 
@@ -35,6 +37,8 @@ in {
     nixpkgsClone = {
       cloneDir = mkOption {
         type = types.path;
+        example = "/home/nixos/git/nixpkgs";
+
         default = "${cfg.dataDir}/nixpkgs";
         description = ''
           The path to the cloned nixpkgs pr-tracker will use.
@@ -49,6 +53,8 @@ in {
 
       remote = mkOption {
         type = types.str;
+        example = "upstream";
+
         default = "origin";
         description = ''
           The remote name in the repository corresponding to upstream Nixpkgs.
@@ -66,6 +72,8 @@ in {
 
       interval = mkOption {
         type = types.str;
+        example = "15min";
+
         default = "30min";
         description = ''
           How often to fetch nixpkgs if `cfg.nixpkgsClone.managedByModule` is true.
@@ -75,6 +83,8 @@ in {
 
     userAgent = mkOption {
       type = types.str;
+      example = "my pr-tracker";
+
       default = "pr-tracker by alyssais";
       description = ''
         The User-Agent string to use when contacting the GitHub API.
@@ -83,6 +93,8 @@ in {
 
     sourceUrl = mkOption {
       type = types.str;
+      example = "https://github.com/me/my-pr-tracker-fork";
+
       default = "https://git.qyliss.net/pr-tracker";
       description = ''
         The URL where users can download the program's source code.
@@ -91,6 +103,8 @@ in {
 
     mountPath = mkOption {
       type = with types; nullOr str;
+      example = "pr-tracker.html";
+
       default = null;
       description = ''
         A "mount" path can be specified, which will be prefixed to all
@@ -129,6 +143,8 @@ in {
 
     dataDir = mkOption {
       type = types.path;
+      example = "/home/nixos/git";
+
       default = "/var/lib/pr-tracker";
       description = ''
         The data directory for pr-tracker.
