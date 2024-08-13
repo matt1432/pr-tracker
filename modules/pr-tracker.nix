@@ -140,6 +140,14 @@ in {
         :::
       '';
     };
+
+    openFirewall = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Open ports needed for the functionality of the program.
+      '';
+    };
   };
 
   config = let
@@ -181,7 +189,9 @@ in {
         pr-tracker = {};
       };
 
-      networking.firewall.allowedTCPPorts = [3000];
+      networking.firewall = mkIf cfg.openFirewall {
+        allowedTCPPorts = [3000];
+      };
 
       systemd.sockets.pr-tracker = {
         listenStreams = ["0.0.0.0:3000"];
