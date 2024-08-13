@@ -294,4 +294,8 @@ in {
           };
       };
     };
+
+  meta = with lib; {
+    maintainers = with maintainers; [matt1432];
+  };
 }
